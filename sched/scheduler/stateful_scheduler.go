@@ -169,6 +169,8 @@ type statefulScheduler struct {
 
 	requestorsCounts map[string]map[string]int // map of requestor to job and task stats counts
 
+	// scheduling aglorithm
+	SchedAlg SchedulingAlgorithm
 	// stats
 	stat stats.StatsReceiver
 }
@@ -307,6 +309,8 @@ func NewStatefulScheduler(
 			recoverJobs(sched.sagaCoord, sched.addJobCh)
 		}()
 	}
+
+	sched.SchedAlg = &OrigSchedulingAlg{}
 	return sched
 }
 
@@ -802,7 +806,8 @@ func (s *statefulScheduler) checkForCompletedJobs() {
 func (s *statefulScheduler) scheduleTasks() {
 	// Calculate a list of Tasks to Node Assignments & start running all those jobs
 	// Pass nil config so taskScheduler can determine the most appropriate values itself.
-	taskAssignments, nodeGroups := getTaskAssignments(s.clusterState, s.inProgressJobs, s.requestorMap, nil, s.stat)
+	taskAssignments, nodeGroups := getTaskAssignments(s.clusterState, s.inProgressJobs, s.requestorMap, nil,
+		s.stat,	s.SchedAlg)
 	if taskAssignments != nil {
 		s.clusterState.nodeGroups = nodeGroups
 	}
